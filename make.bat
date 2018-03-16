@@ -3,7 +3,10 @@
 set name=helloworld
 
 if %1x==x goto end
-goto %1
+if %1==release goto release
+if %1==debug goto debug
+if %1==clean goto clean
+goto end
 
 :release
 nasm -f win32 %name%.asm
