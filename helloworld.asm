@@ -30,52 +30,54 @@
     section .text
 
 main:
-    mov     ebp, esp
+    mov     ebp, esp                ; get the address of the top (bottom?) of the stack
     sub     esp, 4                  ; reserve a place for a local variable from the stack
 
-    push    STD_INPUT_HANDLE
-    call    _GetStdHandle
-    push    NULL
-    lea     ebx, [ebp-4]
-    push    ebx
-    push    128
-    push    buffer
-    push    eax
-    call    _ReadConsoleA
+    push    STD_INPUT_HANDLE        ; nStdHandle
+    call    _GetStdHandle           ; GetStdHandle(nStdHandle) --> return value is in EAX
 
-    push    STD_OUTPUT_HANDLE
-    call    _GetStdHandle
-    push    NULL
-    lea     ebx, [ebp-4]
-    push    ebx
-    push    DWORD [ebp-4]
-    push    buffer
-    push    eax
-    call    _WriteConsoleA
+    push    NULL                    ; pInputControl
+    lea     ebx, [ebp-4]            ; get address for the local variable in the stack
+    push    ebx                     ; lpNumberCharsRead
+    push    128                     ; nNumberOfCharsToRead
+    push    buffer                  ; lpBuffer
+    push    eax                     ; hConsoleInput
+    call    _ReadConsoleA           ; ReadConsoleA(hConsoleInput, lpBuffer, nNumberOfCharsToRead, lpNumberCharsRead, pInputControl)
+
+    push    STD_OUTPUT_HANDLE       ; nStdHandle
+    call    _GetStdHandle           ; GetStdHandle(nStdHandle) --> return value is in EAX
+
+    push    NULL                    ; lpReserved
+    lea     ebx, [ebp-4]            ; get address for the local variable in the stack
+    push    ebx                     ; lpNumberOfCharsWritten
+    push    DWORD [ebp-4]           ; nNumberOfCharsToWrite
+    push    buffer                  ; lpBuffer
+    push    eax                     ; hConsoleOutput
+    call    _WriteConsoleA          ; WriteConsoleA(hConsoleOutput, lpBuffer, nNumberOfCharsToWrite, lpNumberOfCharsWritten, lpReserved)
 
     mov     eax, [ebp-4]            ; get a value from the local variable
-    mov     BYTE [buffer+eax], 0
+    mov     BYTE [buffer+eax], NULL ; append NULL at the end of the string
 
-    push    DWORD MB_OK
-    push    DWORD caption
-    push    DWORD buffer
-    push    DWORD NULL
-    call    _MessageBoxA
+    push    DWORD MB_OK             ; uType
+    push    DWORD caption           ; lpCaption
+    push    DWORD buffer            ; lpText
+    push    DWORD NULL              ; hWnd
+    call    _MessageBoxA            ; MessageBoxA(hWnd, lpText, lpCaption, uType)
 
     add     esp, 4                  ; "free" the local variable
 
-    push    0
-    call    _ExitProcess
+    push    0                       ; uExitCode
+    call    _ExitProcess            ; ExitProcess(uExitCode)
 
     section .data
 
 caption:
-    db      'Hello, World!', 0
+    db      'Hello, World!', 0      ; static NULL-terminated string
 
     section .bss
 
 buffer:
-    resb    128
+    resb    128                     ; buffer for 128 bytes
 
 ; Building a release binary:
 ;   nasm -f win32 helloworld.asm
@@ -94,3 +96,10 @@ buffer:
 ;   "run"
 ;   "i r" shows register contents
 ;   "x/8xb 0x402000" shows memory contents at given address, 8bytes in hexadecimal format
+;
+; Reference of all Win32 functions used in this example:
+;   https://docs.microsoft.com/en-us/windows/console/getstdhandle
+;   https://docs.microsoft.com/en-us/windows/console/readconsole
+;   https://docs.microsoft.com/en-us/windows/console/writeconsole
+;   https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-messageboxa
+;   https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-exitprocess
